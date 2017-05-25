@@ -6,7 +6,7 @@
     app.controller("CreateBrickModalController", CreateBrickModalController);
 
     /*@ngInject*/
-    function CreateBrickModalController($rootScope, $scope, $state, utils, brickStore, selectedCluster) {
+    function CreateBrickModalController($rootScope, $scope, $state, utils, brickStore) {
 
         var vm = this;
 
@@ -73,36 +73,35 @@
             vm.glusterClusterList = [];
             vm.selectedHost = [];
 
-            utils.getObjectList("Cluster")
-                .then(function(data) {
-                    $rootScope.clusterData = data;
-                    vm.clusterList = JSON.parse(JSON.stringify($rootScope.clusterData.clusters));
-                    return utils.getObjectList("Node");
-                })
-                .then(function(data) {
+            if (typeof $rootScope.clusterData !== "undefined") {
+                vm.clusterList = JSON.parse(JSON.stringify($rootScope.clusterData.clusters));
 
-                    vm.hostList = data.nodes;
-                    _getGlusterClusterList();
-                    vm.isDataLoading = false;
-                    var glusterClusterListLen = vm.glusterClusterList.length,
-                        i;
-                    if (typeof selectedCluster !== "undefined") {
-                        for (i = 0; i < glusterClusterListLen; i++) {
-                            if (vm.glusterClusterList[i].cluster_id === selectedCluster.cluster_id) {
-                                vm.selectedCluster = vm.glusterClusterList[i];
-                                break;
-                            }
-                        }
-
-                    } else {
+                utils.getObjectList("Node")
+                    .then(function(data) {
+                        vm.hostList = data.nodes;
+                        vm.isDataLoading = false;
+                        _getGlusterClusterList();
                         vm.selectedCluster = vm.glusterClusterList[0];
-                    }
+                    });
 
-                });
+            } else {
+                utils.getObjectList("Cluster")
+                    .then(function(data) {
+                        $rootScope.clusterData = data;
+                        vm.clusterList = JSON.parse(JSON.stringify($rootScope.clusterData.clusters));
+                        return utils.getObjectList("Node");
+                    })
+                    .then(function(data) {
+                        vm.hostList = data.nodes;
+                        _getGlusterClusterList();
+                        vm.isDataLoading = false;
+                        vm.selectedCluster = vm.glusterClusterList[0];
+                    });
+            }
         }
 
         function cancelModal() {
-            $state.go("create-file-share");
+            $state.go("file-share");
             $rootScope.$emit("modal.done", "cancel");
         }
 
@@ -130,7 +129,7 @@
                 brickStore.createBrick(vm.brickCreationHost, vm.selectedCluster)
                     .then(function(data) {
                         vm.taskSubmitted = true;
-                        vm.jobId = data.job_id;
+                        vm.job = data.job_id;
                     });
             }
         }
@@ -290,7 +289,6 @@
 
         function viewTaskProgress() {
             $state.go("task-detail", { taskId: vm.jobId });
-            vm.closeModal();
         }
 
         /*===================================Private Funtions==========================================*/
@@ -408,8 +406,8 @@
                 host.freeDevices = [];
                 host.availableCapacity = 0;
             } else {
-                host.freeDevices = host.blockdevices.free ? _getFreeDevices(host) : [];
-                host.availableCapacity = host.blockdevices.free ? _getCapacity(host) : 0;
+                host.freeDevices = host.disks.free ? _getFreeDevices(host) : [];
+                host.availableCapacity = host.disks.free ? _getCapacity(host) : 0;
             }
 
             host.selectedDisk = [];

@@ -915,7 +915,7 @@
 
                         if (data.status !== "finished") {
                             if (type === "singleHost") {
-                                if (host.counts < 11) {
+                                if (host.counts < 7) {
                                     _startJournalTimer(journalJobId, type, host);
                                     host.counts++;
                                 } else {
@@ -925,7 +925,7 @@
                                     vm.showJournalErrorMsg = true;
                                 }
                             } else {
-                                if (counts < 11) {
+                                if (counts < 7) {
                                     _startJournalTimer(journalJobId);
                                     counts++;
                                 } else {
